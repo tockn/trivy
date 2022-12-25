@@ -2,11 +2,13 @@ package downloader
 
 import (
 	"context"
-	"os"
-
 	getter "github.com/hashicorp/go-getter"
 	"golang.org/x/xerrors"
+	"os"
+	"sync"
 )
+
+var getterMu = sync.Mutex{}
 
 // DownloadToTempDir downloads the configured source to a temp dir.
 func DownloadToTempDir(ctx context.Context, url string) (string, error) {
@@ -35,7 +37,9 @@ func Download(ctx context.Context, src, dst, pwd string) error {
 	var opts []getter.ClientOption
 
 	// Overwrite the file getter so that a file will be copied
+	getterMu.Lock()
 	getter.Getters["file"] = &getter.FileGetter{Copy: true}
+	getterMu.Unlock()
 
 	// Build the client
 	client := &getter.Client{
